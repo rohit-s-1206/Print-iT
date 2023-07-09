@@ -1,0 +1,50 @@
+from flask import Flask, render_template, request, send_file
+import os
+from werkzeug.utils import secure_filename
+
+app = Flask(__name__)
+
+# Specify the folder to store uploaded files
+UPLOAD_FOLDER = 'uploads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Allowed file extensions
+ALLOWED_EXTENSIONS = {'pdf'}
+
+# Function to check if a file has an allowed extension
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# Route for the home page
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+# Route to handle file upload
+@app.route('/upload', methods=['POST'])
+def upload():
+    # Check if a file was submitted with the request
+    if 'file' not in request.files:
+        return 'No file found', 400
+
+    file = request.files['file']
+
+    # Check if the file has an allowed extension
+    if file and allowed_file(file.filename):
+        # Secure the filename to prevent any malicious behavior
+        filename = secure_filename(file.filename)
+
+        # Save the uploaded file to the specified folder
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+        # Process the file (e.g., convert to printer-ready format)
+        # ... your code here ...
+
+        # Provide a download link for the printer-ready file
+        return send_file(os.path.join(app.config['UPLOAD_FOLDER'], filename), as_attachment=True)
+
+    return 'Invalid file format', 400
+
+if __name__ == '__main__':
+    app.run(debug=True)
